@@ -1,5 +1,5 @@
 # Environment
-env
+.env.dev
 
 # Mac files (DS_Store)I’m
 .DS_Store
