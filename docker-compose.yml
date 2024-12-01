@@ -15,7 +15,7 @@ services:
 
   rabbitmq:
     restart: always
-    image: rabbitmq
+    image: rabbitmq:3-management
     ports:
       - "5672:5672"
       - "15672:15672"
@@ -33,18 +33,18 @@ services:
 
   celery:
     build: order_service
-    command: celery -A orders worker -l info
+    command: celery -A orders worker -E -l info
     volumes:
       - ./order_service/:/code
     depends_on:
       rabbitmq:
         condition: service_healthy
 
-  celery-beat:
-    build: order_service
-    command: celery -A orders beat -l info
-    volumes:
-      - ./order_service/:/code
-    depends_on:
-      rabbitmq:
-        condition: service_healthy
+#  celery-beat:
+#    build: order_service
+#    command: celery -A orders beat -l info
+#    volumes:
+#      - ./order_service/:/code
+#    depends_on:
+#      rabbitmq:
+#        condition: service_healthy

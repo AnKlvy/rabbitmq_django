@@ -9,7 +9,6 @@ from .tasks import initialize_rabbitmq
 class OrderViewSet(ModelViewSet):
     queryset = Order.objects.all()
     serializer_class = OrderSerializer
-    # initialize_rabbitmq.apply_async()
 
     def perform_create(self, serializer):
         """
@@ -31,29 +30,31 @@ class OrderViewSet(ModelViewSet):
         """
         Отправляет сообщение о заказе в RabbitMQ через `topic` exchange.
         """
-        exchange_name = 'order-topic-exchange'
-        exchange = Exchange(exchange_name, type='topic')  # Тип обменника - topic
-        routing_key = f"order.{region}"  # Создаём ключ маршрутизации
-
-        # Формируем сообщение
-        message = {
-            "id": order.id,
-            "restaurant": order.restaurant,
-            "courier": order.courier,
-            "foods": order.foods,
-            "status": order.status,
-            "event": event,
-        }
-
         # Подключение и публикация
-        with Connection("amqp://guest:guest@localhost:5672//") as connection:
-            producer = Producer(connection, exchange)
-            producer.publish(
-                message,
-                routing_key=routing_key,
-                serializer="json",
-                retry=True
-            )
+        with Connection("amqp://guest:guest@rabbitmq:5672//") as connection:
+            with connection.channel():  # Открываем канал для взаимодействия
+
+                exchange_name = 'order-topic-exchange'
+                exchange = Exchange(exchange_name, type='topic', channel=connection.channel())  # Тип обменника - topic
+                exchange.declare()
+                routing_key = f"order.{region}"  # Создаём ключ маршрутизации
+
+                # Формируем сообщение
+                message = {
+                    "id": order.id,
+                    "restaurant": order.restaurant,
+                    "courier": order.courier,
+                    "foods": order.foods,
+                    "status": order.status,
+                    "event": event,
+                }
+                producer = Producer(connection, exchange)
+                producer.publish(
+                    message,
+                    routing_key=routing_key,
+                    serializer="json",
+                    retry=True
+                )
 
     def get_region_from_request(self):
         """

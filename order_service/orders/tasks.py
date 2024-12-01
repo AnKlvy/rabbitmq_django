@@ -11,23 +11,23 @@ def initialize_rabbitmq():
     try:
         # Подключаемся к RabbitMQ
         with Connection(
-                "amqp://guest:guest@rabbitmq:5672//") as connection:  # Локальный хост заменён на docker service 'rabbitmq'
+                "amqp://guest:guest@rabbitmq:5672/") as connection:  # Локальный хост заменён на docker service 'rabbitmq'
             print("RabbitMQ initialization task is running")
             # Создаём очереди для Topic Exchange
-            with connection.channel() as channel:  # Открываем канал для взаимодействия
+            with connection.channel():  # Открываем канал для взаимодействия
 
                 # Создаём Topic Exchange через Kombu Exchange
-                exchange = Exchange('order-topic-exchange', type='topic', durable=True, auto_delete=False)
+                exchange = Exchange('order-topic-exchange', type='topic', durable=True, channel=connection.channel())
                 # Сначала объявляем Exchange
-                exchange.declare(channel)
+                exchange.declare()
                 print(f"Exchange 'order-topic-exchange' created")
 
                 for region in ['almaty', 'aqtobe']:
                     # Создаём очередь с привязкой к exchange и routing_key
                     queue = Queue(f'order-topic-q-{region}', exchange=exchange, routing_key=f'order.{region}',
-                                  durable=True, auto_delete=False)
+                                  durable=True, channel=connection.channel())
                     # Объявляем очередь
-                    queue.declare(channel)
+                    queue.declare()
                     print(f"Queue created: order-topic-q-{region}")
 
                 print("RabbitMQ initialization completed")
